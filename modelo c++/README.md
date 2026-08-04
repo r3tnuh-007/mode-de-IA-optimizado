@@ -18,7 +18,7 @@ O plano é dividido em três etapas principais:
 
     Executar e Testar a Aplicação
 
-1. Preparar o Ambiente no Ubuntu 22.04 LTS
+### 1. Preparar o Ambiente no Ubuntu 22.04 LTS
 
 Esta etapa garante que o sistema esteja pronto para receber a engine de inferência e o modelo.
 
@@ -52,7 +52,7 @@ cmake .. -DLLAMA_CUBLAS=ON -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 ```
 
-2. Escolher e Baixar um Modelo Compatível
+### 2. Escolher e Baixar um Modelo Compatível
 
 A chave para o sucesso está em escolher um modelo pequeno e quantizado.
 
@@ -69,8 +69,11 @@ A chave para o sucesso está em escolher um modelo pequeno e quantizado.
     Download: Use o wget para baixar o arquivo .gguf diretamente do Hugging Face para o seu diretório de trabalho .
 
 ```bash
-# Exemplo com Gemma 3 1B
-wget https://huggingface.co/google/gemma-3-1b-it-GGUF/resolve/main/gemma-3-1b-it-Q4_K_M.gguf
+# Primeiro, configure seu token (substitua SEU_TOKEN pelo token real)
+export HF_TOKEN="SEU_TOKEN_AQUI"
+
+# Baixar o Gemma Q3_K_M
+wget --header "Authorization: Bearer $HF_TOKEN" https://huggingface.co/tensorblock/gemma-3-1b-it-GGUF/resolve/main/gemma-3-1b-it-Q3_K_M.gguf
 ```
 
 3. Executar e Testar a Aplicação
@@ -81,26 +84,20 @@ Com a engine e o modelo prontos, é hora de executar.
 
 ```bash
 ./llama-cli -m gemma-3-1b-it-Q4_K_M.gguf -p "Explique o conceito de agricultura de precisão."
+#ou
+./llama-cli -m gemma-3-1b-it-Q3_K_M.gguf -p "Teste"
 ```
 
 	Servidor HTTP e interface web: Para uma experiência mais amigável, use o llama-server, que cria um servidor local. Você pode então acessá-lo pelo navegador http://localhost:8090
 ```bash
 # Iniciar o servidor com o modelo
-./llama-server -m gemma-3-1b-it-Q4_K_M.gguf --port 8090 -c 512
+./llama-server -m gemma-3-1b-it-Q3_K_M.gguf --port 8090 -c 512
 ```
 O argumento -c 512 define o tamanho do contexto, o que ajuda a controlar o uso de memória.
 
 # Conclusion
-Verificação da Solução <br><br>
-Restrição do Desafio					Como a Solução Atende<br><br>
-8 GB RAM								Modelos com 1B-3B parâmetros e quantização Q4_K_M (ex: ~700 MB) têm baixo consumo de memória.<br><br>
-Intel Core i5 10ª-12ª geração			O llama.cpp é otimizado para CPU com instruções AVX2, presentes nesses processadores.<br><br>
-Ubuntu 22.04 LTS						O guia foi construído para este SO, com comandos apt e compatibilidade total .<br><br>
-Funcionar Offline						A engine e o modelo são executados localmente, sem necessidade de internet .<br><br>
-Não ultrapassar 7 GB					O consumo total, com modelo e engine, fica significativamente abaixo do limite, como demonstrado por projetos similares .<br><br>
-Prêmio de Adaptação Africana (15%)		O modelo base pode ser ajustado (fine-tuning) ou utilizado com prompts e dados em línguas africanas.<br><br>
 
-# Verificação da Solução
+## Verificação da Solução
 <table>
   <thead>
     <tr>
