@@ -1,4 +1,4 @@
-# Chat conversation
+# Chat conversation (Desafio LLM offline)
 
 ## Query
 com base nessas restrições mostre como implementar uma solução que resolva o problema.
