@@ -142,13 +142,4 @@ O argumento -c 512 define o tamanho do contexto, o que ajuda a controlar o uso d
 </table>
 
 
-# Fontes da Informação
-
-    "从零开始：llama.cpp 编译运行全流程指南" - Guia detalhado de instalação e compilação para Ubuntu.
-
-    "Ubuntu-Cuda-Llama.cpp-Executable" - Repositório com binário pré-compilado e exemplos de uso, incluindo o modelo Gemma 3 1B.
-
-    e - Dockerfiles de exemplo mostrando a compilação do llama-server para modelos como DeepSeek-R1 1.5B.
-
-    - Dockerfile que demonstra a otimização para CPU com AVX2.
 
