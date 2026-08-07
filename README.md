@@ -1,4 +1,4 @@
-_Project made by aluis_
+_Project made by aluis(r3tnuh)_
 # modelo-de-IA-optimizado
 
 Primeiro estarei começando o treino para aprender ML e DL
