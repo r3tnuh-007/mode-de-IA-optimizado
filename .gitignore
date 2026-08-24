@@ -5,3 +5,4 @@ __pychache__
 .env
 .vscode
 llama.cpp
+gemma-3-1b-it.Q4_K_M.gguf
