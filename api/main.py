@@ -13,7 +13,7 @@ COLLECTION_NAME = "conhecimento_agricola"
 TOP_K_RETRIEVALS = 3
 
 # --- Inicialização do FastAPI ---
-app = FastAPI(title="API RAG Agrícola", description="API para consultar conhecimento agrícola usando RAG.")
+app = FastAPI(title="Agricultural RAG API", description="API to query agricultural knowledge using RAG.")
 
 # --- Inicialização do ChromaDB e Embeddings (carregados uma vez na inicialização) ---
 chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
@@ -52,15 +52,15 @@ def buscar_contexto(pergunta: str, top_k: int):
 def gerar_resposta(pergunta: str, contexto: str):
     """Envia o prompt para o llama-server e retorna a resposta."""
     # Construindo o prompt com o contexto recuperado
-    prompt = f"""Você é um assistente especializado em agricultura.
-Use APENAS o seguinte contexto para responder à pergunta.
-Se não souber a resposta, apenas diga que não sabe.
+    prompt = f"""You are an assistant specializing in agriculture.
+Use ONLY the following context to answer the question.
+If you do not know the answer, simply say "I do not know".
 
-Contexto:
+Context:
 {contexto}
 
-Pergunta: {pergunta}
-Resposta:"""
+Question: {pergunta}
+Response: """
 
     payload = {
         "model": "local-model",  # O alias usado no llama-server. Pode ser qualquer nome.
@@ -75,8 +75,8 @@ Resposta:"""
         response.raise_for_status()
         return response.json()["choices"][0]["text"].strip()
     except requests.exceptions.RequestException as e:
-        print(f"Erro ao chamar o llama-server: {e}")
-        return "Desculpe, ocorreu um erro ao gerar a resposta."
+        print(f"Error calling llama-server: {e}")
+        return "Sorry, something went wrong generating the response."
 
 # --- Endpoint da API ---
 @app.post("/perguntar", response_model=QueryResponse)
@@ -88,7 +88,7 @@ async def perguntar(request: QueryRequest):
     # 1. Recuperar o contexto relevante
     docs, metadados = buscar_contexto(pergunta, top_k)
     if not docs:
-        raise HTTPException(status_code=404, detail="Nenhum documento relevante encontrado para a pergunta.")
+        raise HTTPException(status_code=404, detail="No relevant document found.")
 
     contexto = "\n\n".join(docs)
 
@@ -98,7 +98,7 @@ async def perguntar(request: QueryRequest):
     # 3. Preparar as fontes para a resposta
     fontes = []
     for meta in metadados:
-        fonte_nome = meta.get("source", "Fonte desconhecida")
+        fonte_nome = meta.get("source", "Unknown source")
         if fonte_nome not in fontes:
             fontes.append(fonte_nome)
 
