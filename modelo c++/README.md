@@ -83,6 +83,7 @@ Com a engine e o modelo prontos, é hora de executar.
     Interface de linha de comando (CLI): O llama.cpp oferece um executável llama-cli para interações diretas. Use o comando -m para apontar o modelo e -p para a sua pergunta .
 
 ```bash
+cd llama.cpp/build/bin
 ./llama-cli -m gemma-3-1b-it-Q4_K_M.gguf -p "Explique o conceito de agricultura de precisão."
 #ou
 ./llama-cli -m gemma-3-1b-it-Q3_K_M.gguf -p "Teste"
