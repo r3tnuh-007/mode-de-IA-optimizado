@@ -2,6 +2,6 @@ import requests
 
 response = requests.post(
 	"http://127.0.0.1:8000/perguntar",
-	json={"pergunta": "Who won the copa game"}
+	json={"pergunta": "What is gardening?"}
 )
 print(response.json())
