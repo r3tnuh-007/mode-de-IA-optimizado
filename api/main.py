@@ -7,7 +7,7 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 
 # --- Configurações ---
-LLAMA_SERVER_URL = "http://127.0.0.1:4242/v1"  # URL do seu llama-server
+LLAMA_SERVER_URL = "http://127.0.0.1:8080/v1"  # URL do seu llama-server
 CHROMA_DB_PATH = "./chroma_db"
 COLLECTION_NAME = "conhecimento_agricola"
 TOP_K_RETRIEVALS = 3
