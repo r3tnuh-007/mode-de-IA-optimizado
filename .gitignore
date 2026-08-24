@@ -1,4 +1,7 @@
 .venv
+.venv_api
 __init__.py
 __pychache__
 .env
+.vscode
+llama.cpp
