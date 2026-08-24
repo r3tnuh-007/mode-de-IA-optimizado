@@ -7,8 +7,8 @@ import glob
 from typing import List
 
 # Configurações
-DOCS_DIR = "../documents"  # Pasta onde seus documentos estão
-CHROMA_DB_PATH = "../chroma_db"
+DOCS_DIR = "./documents"  # Pasta onde seus documentos estão
+CHROMA_DB_PATH = "./chroma_db"
 COLLECTION_NAME = "conhecimento_agricola"
 
 # 1. Inicializar o cliente ChromaDB
