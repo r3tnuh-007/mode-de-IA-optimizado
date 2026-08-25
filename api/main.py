@@ -126,7 +126,8 @@ def gerar_resposta(pergunta: str, contexto: str) -> str:
 
     if contexto and len(contexto.strip()) > 10:
         prompt = f"""You are an assistant specializing in agriculture.
-Use the context below to answer the question. If the answer is not in the context, say "I don't know" without making up information.
+Use the context below to answer the question. If the answer is not in the context, answer the question below using your general knowledge, but only if it is related with agriculture, otherwise just say "Seems like this question does not relate with agriculture".
+or "I did not find anything on my knowledge base related to this question" without making up information.
 Context:
 {contexto}
 
@@ -134,7 +135,7 @@ Question: {pergunta}
 Answer:"""
     else:
         prompt = f"""You are an assistant specializing in agriculture.
-Answer the question below using your general knowledge.
+Answer the question below using your general knowledge, but only if it is related with agriculture, otherwise just say "Seems like this question does not relate with agriculture".
 
 Question: {pergunta}
 Answer:"""
