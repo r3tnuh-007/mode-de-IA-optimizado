@@ -12,14 +12,105 @@ document.addEventListener('DOMContentLoaded', () => {
     const typingIndicator = document.getElementById('typingIndicator');
     const ttsToggle = document.getElementById('ttsToggle');
 
+    // ----- CONFIGURAÇÃO DA API -----
+    const API_URL = 'http://127.0.0.1:8000/perguntar';
+    const HEALTH_URL = 'http://127.0.0.1:8000/health';
+    let apiOnline = false;
+
     // ----- ESTADO -----
     let currentSessionId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-    let sessions = {};          // { sessionId: [ { role, content }, ... ] }
+    let sessions = {};          // { sessionId: [ { role, content, fontes? }, ... ] }
     let sessionOrder = [];      // lista de IDs em ordem (mais recente no final)
     let ttsEnabled = false;
     let isProcessing = false;   // evita múltiplos envios
     let speechSynth = window.speechSynthesis;
     let utterance = null;
+
+    // ----- VERIFICAR SAÚDE DA API -----
+    async function checkApiHealth() {
+        try {
+            const response = await fetch(HEALTH_URL, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                apiOnline = true;
+                console.log('✅ API online:', data);
+                return true;
+            } else {
+                apiOnline = false;
+                console.warn('⚠️ API offline:', response.status);
+                return false;
+            }
+        } catch (error) {
+            apiOnline = false;
+            console.warn('⚠️ Erro ao conectar com API:', error.message);
+            return false;
+        }
+    }
+
+    // ----- FUNÇÃO PARA FAZER PERGUNTA À API -----
+    async function fazerPergunta(pergunta) {
+        if (!pergunta || pergunta.trim().length < 3) {
+            return {
+                erro: true,
+                mensagem: "Por favor, faça uma pergunta com pelo menos 3 caracteres."
+            };
+        }
+
+        try {
+            const payload = {
+                pergunta: pergunta.trim(),
+                top_k: 3
+            };
+
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                let erroMsg = `Erro ${response.status}`;
+                try {
+                    const erroData = await response.json();
+                    if (erroData.detail) {
+                        erroMsg = erroData.detail;
+                    }
+                } catch (e) {
+                    erroMsg = `Erro ${response.status}: ${response.statusText}`;
+                }
+
+                return {
+                    erro: true,
+                    mensagem: erroMsg,
+                    status: response.status
+                };
+            }
+
+            const data = await response.json();
+
+            return {
+                erro: false,
+                pergunta: data.pergunta,
+                resposta: data.resposta,
+                fontes: data.fontes || [],
+                dados: data
+            };
+
+        } catch (error) {
+            console.error("❌ Erro na requisição:", error);
+            return {
+                erro: true,
+                mensagem: "Erro de conexão com o servidor. Verifique se a API está rodando.",
+                detalhes: error.message
+            };
+        }
+    }
 
     // ----- INICIALIZAÇÃO: primeira sessão -----
     function initFirstSession() {
@@ -29,6 +120,9 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionOrder = [currentSessionId];
         renderHistory();
         renderMessages(currentSessionId);
+
+        // Verificar saúde da API em segundo plano
+        checkApiHealth();
     }
 
     // ----- RENDER: histórico (menu lateral) -----
@@ -38,27 +132,23 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         let html = '';
-        // exibir do mais antigo ao mais recente (top->bottom)
-        sessionOrder.forEach((id, index) => {
+        sessionOrder.forEach((id) => {
             const msgs = sessions[id] || [];
             const firstUserMsg = msgs.find(m => m.role === 'user');
             const preview = firstUserMsg ? firstUserMsg.content.slice(0, 40) : 'Conversa vazia';
             const isActive = (id === currentSessionId);
             const activeClass = isActive ? 'active-session' : '';
-            // tentar pegar data/hora para diferenciar (usamos timestamp)
             const label = preview + (preview.length >= 40 ? '…' : '');
             html += `<li class="${activeClass}" data-session-id="${id}">${label}</li>`;
         });
         historyList.innerHTML = html;
 
-        // Adicionar event listeners para cada item do histórico (mudar sessão)
         document.querySelectorAll('.history-list li[data-session-id]').forEach(li => {
             li.addEventListener('click', (e) => {
                 const id = li.dataset.sessionId;
                 if (id && id !== currentSessionId) {
                     switchSession(id);
                 }
-                // Fechar sidebar em mobile
                 if (window.innerWidth <= 720) {
                     sidebar.classList.remove('open');
                 }
@@ -78,12 +168,23 @@ document.addEventListener('DOMContentLoaded', () => {
             avatar.textContent = msg.role === 'bot' ? '🤖' : '👤';
             const bubble = document.createElement('div');
             bubble.className = 'bubble';
-            bubble.textContent = msg.content;
+
+            // Adicionar fontes se existirem (apenas para respostas do bot)
+            if (msg.role === 'bot' && msg.fontes && msg.fontes.length > 0) {
+                bubble.innerHTML = `
+                    ${msg.content}
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e0e6f0; font-size: 0.8em; color: #6c7e99;">
+                        📚 Fontes: ${msg.fontes.join(', ')}
+                    </div>
+                `;
+            } else {
+                bubble.textContent = msg.content;
+            }
+
             div.appendChild(avatar);
             div.appendChild(bubble);
             chatMessages.appendChild(div);
         });
-        // scroll para o final
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
@@ -93,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSessionId = sessionId;
         renderHistory();
         renderMessages(currentSessionId);
-        // cancelar qualquer leitura em andamento
         if (speechSynth.speaking) speechSynth.cancel();
     }
 
@@ -107,55 +207,34 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSessionId = newId;
         renderHistory();
         renderMessages(currentSessionId);
-        // Fechar sidebar em mobile
         if (window.innerWidth <= 720) {
             sidebar.classList.remove('open');
         }
-        // cancelar leitura
         if (speechSynth.speaking) speechSynth.cancel();
-        // limpar input
         userInput.value = '';
         typingIndicator.classList.remove('show');
         isProcessing = false;
     }
 
-    // ----- ADICIONAR MENSAGEM (user + resposta IA) -----
-    function addMessage(role, content) {
+    // ----- ADICIONAR MENSAGEM -----
+    function addMessage(role, content, fontes = null) {
         if (!sessions[currentSessionId]) {
             sessions[currentSessionId] = [];
         }
-        sessions[currentSessionId].push({ role, content });
+        const msg = { role, content };
+        if (fontes) {
+            msg.fontes = fontes;
+        }
+        sessions[currentSessionId].push(msg);
         renderMessages(currentSessionId);
-        renderHistory(); // atualiza preview
+        renderHistory();
     }
 
-    // ----- SIMULAÇÃO DE RESPOSTA DA IA (com latência mínima) -----
-    function simulateAIResponse(userMessage) {
-        // Respostas variadas para dar sensação de IA real
-        const responses = [
-            "Interessante! Pode me contar mais sobre isso?",
-            "Entendo. Como posso ajudar com esse assunto?",
-            "Ótima pergunta! Vou pensar um pouco...",
-            "Que legal! Você tem experiência com isso?",
-            "Hmm, isso me faz refletir. E se a gente abordar de outro ângulo?",
-            "Compreendo. Existem várias perspectivas sobre isso.",
-            "Adoro esse tópico! Vamos explorar juntos.",
-            "Isso me lembra de algo... já ouviu falar sobre o efeito Dunning-Kruger?",
-            "Pode elaborar um pouco mais?",
-            "Fantástico! Continue, estou ouvindo atentamente."
-        ];
-        // Escolhe uma resposta baseada no comprimento da mensagem para variar
-        const idx = (userMessage.length * 7 + userMessage.charCodeAt(0) || 0) % responses.length;
-        return responses[idx];
-    }
-
-    // ----- ENVIAR MENSAGEM (fluxo principal) -----
-    function handleSend() {
+    // ----- ENVIAR MENSAGEM (fluxo principal com API) -----
+    async function handleSend() {
         const text = userInput.value.trim();
         if (!text || isProcessing) return;
 
-        // Se a sessão atual estiver vazia (sem mensagens), mantém a saudação, mas adicionamos
-        // Garantir que a sessão exista
         if (!sessions[currentSessionId]) {
             sessions[currentSessionId] = [];
         }
@@ -164,38 +243,50 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage('user', text);
         userInput.value = '';
         isProcessing = true;
-
-        // Mostra indicador de "pensando" com delay mínimo para parecer responsivo
         typingIndicator.classList.add('show');
 
-        // Simula latência da IA (entre 400ms e 1300ms) - UX responsiva
-        const delay = Math.floor(Math.random() * 600) + 350;
-
-        // Armazenar referência para possível cancelamento (não necessário aqui)
-        const timeoutId = setTimeout(() => {
-            // Gera resposta da IA
-            const reply = simulateAIResponse(text);
-            // Adiciona resposta do bot
-            addMessage('bot', reply);
-
-            // Leitura em voz alta (se ativado)
-            if (ttsEnabled) {
-                speakText(reply);
+        try {
+            // Verificar se a API está online
+            if (!apiOnline) {
+                const healthCheck = await checkApiHealth();
+                if (!healthCheck) {
+                    const errorMsg = "⚠️ Servidor offline. Verifique se a API está rodando em " + API_URL;
+                    addMessage('bot', errorMsg);
+                    typingIndicator.classList.remove('show');
+                    isProcessing = false;
+                    return;
+                }
             }
 
-            typingIndicator.classList.remove('show');
-            isProcessing = false;
-        }, delay);
+            // Fazer a requisição para a API
+            const resultado = await fazerPergunta(text);
 
-        // Guardar timeout para cancelar se necessário (ex: nova sessão)
-        // (opcional: para evitar vazamento, mas não crítico)
-        window.__currentTimeout = timeoutId;
+            if (resultado.erro) {
+                // Erro na resposta da API
+                const errorMsg = `❌ ${resultado.mensagem}`;
+                addMessage('bot', errorMsg);
+            } else {
+                // Sucesso - adicionar resposta com fontes
+                addMessage('bot', resultado.resposta, resultado.fontes);
+
+                // Leitura em voz alta (se ativado)
+                if (ttsEnabled) {
+                    speakText(resultado.resposta);
+                }
+            }
+
+        } catch (error) {
+            console.error('❌ Erro inesperado:', error);
+            addMessage('bot', '❌ Ocorreu um erro inesperado. Por favor, tente novamente.');
+        }
+
+        typingIndicator.classList.remove('show');
+        isProcessing = false;
     }
 
     // ----- TEXTO PARA FALA (voz feminina) -----
     function speakText(text) {
         if (!window.speechSynthesis) return;
-        // Cancela qualquer fala anterior
         if (speechSynth.speaking) speechSynth.cancel();
 
         utterance = new SpeechSynthesisUtterance(text);
@@ -204,9 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         utterance.pitch = 1.1;
         utterance.volume = 1;
 
-        // Tentar selecionar uma voz feminina (qualquer)
         const voices = speechSynth.getVoices();
-        // Filtra vozes femininas (pistas: nome contém "female" ou "Google UK" etc.)
         let femaleVoice = voices.find(v =>
             v.name.toLowerCase().includes('female') ||
             v.name.toLowerCase().includes('zira') ||
@@ -214,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
             v.name.toLowerCase().includes('maria') ||
             v.name.toLowerCase().includes('pt') && v.name.toLowerCase().includes('female')
         );
-        // fallback: primeira voz que pareça feminina ou qualquer uma
         if (!femaleVoice) {
             femaleVoice = voices.find(v => v.lang.startsWith('pt')) || voices[0] || null;
         }
@@ -232,7 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Nova sessão
     newSessionBtn.addEventListener('click', createNewSession);
 
     // Toggle TTS
@@ -240,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ttsEnabled = !ttsEnabled;
         ttsToggle.classList.toggle('active', ttsEnabled);
         if (ttsEnabled) {
-            // Se ativado, lê a última mensagem do bot (se houver)
             const msgs = sessions[currentSessionId] || [];
             const lastBotMsg = [...msgs].reverse().find(m => m.role === 'bot');
             if (lastBotMsg) {
@@ -267,13 +353,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Inicializar vozes (carregamento assíncrono)
+    // Inicializar vozes
     if (window.speechSynthesis) {
-        speechSynth.getVoices(); // pré-carregar
+        speechSynth.getVoices();
         speechSynth.onvoiceschanged = () => {
             speechSynth.getVoices();
         };
     }
+
+    // Verificar API periodicamente (a cada 30 segundos)
+    setInterval(checkApiHealth, 30000);
 
     // Inicializa a primeira sessão
     initFirstSession();
