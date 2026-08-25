@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import requests
 import os
 import logging
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 
 # Configurar logging
@@ -17,6 +18,24 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME", "conhecimento_agricola")
 TOP_K_RETRIEVALS = int(os.getenv("TOP_K_RETRIEVALS", "3"))
 
 app = FastAPI(title="API RAG Agrícola")
+
+
+# 🔧 CONFIGURAÇÃO CORS - Permitir requisições do frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5500",   # Live Server (VS Code)
+        "http://localhost:5500",    # Live Server (VS Code)
+        "http://127.0.0.1:8000",   # Própria API
+        "http://localhost:8000",    # Própria API
+        "http://127.0.0.1:3000",   # React/Next.js
+        "http://localhost:3000",    # React/Next.js
+        "*",                        # 🔧 Permite todas (apenas para desenvolvimento)
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],  # 🔧 Incluir OPTIONS
+    allow_headers=["*"],
+)
 
 # --- Modelos de Dados ---
 class QueryRequest(BaseModel):

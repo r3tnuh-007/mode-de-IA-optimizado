@@ -18,15 +18,15 @@
     <!-- MENU LATERAL (histórico da sessão) -->
     <aside class="sidebar" id="sidebar" role="navigation" aria-label="Histórico de conversas">
       <div class="sidebar-header">
-        <h2>🧠 Sessões</h2>
-        <button class="new-session-btn" id="newSessionBtn" aria-label="Nova sessão">+ Nova</button>
+        <h2>🧠 Sessions</h2>
+        <button class="new-session-btn" id="newSessionBtn" aria-label="Nova sessão">+ New</button>
       </div>
       <ul class="history-list" id="historyList">
         <!-- Histórico será injetado via JS -->
-        <li class="history-placeholder">Nenhuma conversa ainda</li>
+        <li class="history-placeholder">No conversations yet</li>
       </ul>
       <div class="sidebar-footer">
-        <span class="session-indicator" id="sessionIndicator">Sessão atual</span>
+        <span class="session-indicator" id="sessionIndicator">Current Session</span>
       </div>
     </aside>
 
@@ -36,12 +36,12 @@
       <header class="chat-header">
         <div class="header-left">
           <button class="hamburger" id="hamburgerBtn" aria-label="Abrir menu lateral">☰</button>
-          <h1>Assistente IA</h1>
+          <h1>agrAI - Your AI for agriculture consults</h1>
         </div>
         <div class="header-right">
           <button class="tts-toggle" id="ttsToggle" aria-label="Ativar leitura em voz alta">
             <span class="tts-icon">🔊</span>
-            <span class="tts-label">Voz</span>
+            <span class="tts-label">Voice</span>
           </button>
         </div>
       </header>
@@ -50,7 +50,7 @@
       <div class="chat-messages" id="chatMessages">
         <div class="message bot">
           <div class="avatar">🤖</div>
-          <div class="bubble">Olá! Como posso ajudar hoje?</div>
+          <div class="bubble">Hello, how can I help you?</div>
         </div>
       </div>
 
@@ -60,7 +60,7 @@
           <input type="text" id="userInput" placeholder="Escreva sua mensagem..." aria-label="Mensagem" autocomplete="off">
           <button id="sendBtn" aria-label="Enviar mensagem">➤</button>
         </div>
-        <div class="typing-indicator" id="typingIndicator">IA está pensando<span>.</span><span>.</span><span>.</span></div>
+        <div class="typing-indicator" id="typingIndicator">AI is thinking<span>.</span><span>.</span><span>.</span></div>
       </footer>
     </main>
   </div>
